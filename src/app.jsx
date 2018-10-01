@@ -1,7 +1,7 @@
 import React from 'react';
 
-// Imports the Google Cloud client library
 const speech = require('@google-cloud/speech');
+const record = require('node-record-lpcm16');
 const fs = require('fs');
 
 function RecordButton(props) {
@@ -22,36 +22,42 @@ export default class App extends React.Component {
     }
   }
   speech_to_text() {
-    console.log("-> Requsting transcription from cloud.google.com");
     const client = new speech.SpeechClient();
-    const fileName = './resources/u.flac';
-    const file = fs.readFileSync(fileName);
-    const audioBytes = file.toString('base64');
-    const audio = {
-      content: audioBytes,
-    };
+    const encoding = 'LINEAR16';
+    const sampleRateHertz = 16000;
+    const languageCode = 'pl';
     const config = {
-      encoding: 'FLAC',
-      sampleRateHertz: 44100,
-      languageCode: 'pl',
-    };
-    const request = {
-      audio: audio,
-      config: config,
+      encoding: encoding,
+      sampleRateHertz: sampleRateHertz,
+      languageCode: languageCode,
     };
 
-    client
-      .recognize(request)
-      .then(data => {
-        const response = data[0];
-        const transcription = response.results
-          .map(result => result.alternatives[0].transcript)
-          .join('\n');
-        this.setState({text: transcription});
+    const request = {
+      config: config,
+      interimResults: false,
+    };
+
+    const recognizeStream = client
+      .streamingRecognize(request)
+      .on('error', console.error)
+      .on('data', data =>
+        {
+          let transcription = data.results[0] && data.results[0].alternatives[0]
+            ? `${data.results[0].alternatives[0].transcript}\n`
+            : `\n\nReached transcription time limit, press Ctrl+C\n`
+          this.setState({text: transcription})}
+      );
+
+    record
+      .start({
+        sampleRateHertz: sampleRateHertz,
+        threshold: 0,
+        verbose: false,
+        recordProgram: 'rec',
+        silence: '10.0',
       })
-      .catch(err => {
-        console.error('ERROR:', err);
-      });
+      .on('error', console.error)
+      .pipe(recognizeStream);
   }
   render() {
     return (<div>
