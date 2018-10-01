@@ -1,5 +1,6 @@
 import React from 'react';
 
+
 const speech = require('@google-cloud/speech');
 const record = require('node-record-lpcm16');
 const fs = require('fs');
@@ -18,7 +19,7 @@ export default class App extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      text: null,
+      text: [],
     }
   }
   speech_to_text() {
@@ -45,7 +46,11 @@ export default class App extends React.Component {
           let transcription = data.results[0] && data.results[0].alternatives[0]
             ? `${data.results[0].alternatives[0].transcript}\n`
             : `\n\nReached transcription time limit, press Ctrl+C\n`
-          this.setState({text: transcription})}
+            console.log(transcription)
+          this.setState({
+            text: this.state.text.concat({line:transcription})
+          });
+        }
       );
 
     record
@@ -59,11 +64,21 @@ export default class App extends React.Component {
       .on('error', console.error)
       .pipe(recognizeStream);
   }
+
+
   render() {
+    const text = this.state.text;
+    console.log(this.state.text);
+    let interview = []
+    if (text.length > 0) {
+      for(let i = 0; i < text.length; i++) {
+        interview.push((<p key={i}>{text[i].line}</p>));
+      }
+    }
     return (<div>
-      <h2>Speech to Text Conversion for Patients</h2>
+      <h2>Speech to Text</h2>
       <RecordButton onClick={() => this.speech_to_text()} />
-      <p>{this.state.text}</p>
+      <div>{interview}</div>
     </div>);
   }
 }

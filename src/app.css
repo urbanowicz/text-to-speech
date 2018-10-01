@@ -1,0 +1,14 @@
+body {
+  font: 14px "Helvetica", sans-serif;
+  margin: 20px;
+}
+
+button {
+  padding:10px;
+  background-color: yellow;
+  border-radius: 3px;
+}
+
+p {
+  font-size: 1.4em;
+}
